@@ -50,6 +50,28 @@ app.get('/get-letters', (req, res) => {
     
             let letters_arr = (data.toString()).split('\n')
             letters_arr = letters_arr.slice(0, letters_arr.length - 1)
+
+            let letters_arr_formated = new Array(3)
+            for(let row = 0; row < letters_arr_formated.length; row++)
+            {
+                letters_arr_formated[row] = ['#','#','#','#','#','#'];
+            }
+            let index = 0;
+            for(let row = 0; row < letters_arr_formated.length; row++)
+            {
+                for(let col = 0; col < letters_arr_formated[0].length; col++)
+                {
+                    if(index < letters_arr.length)
+                    {
+                        letters_arr_formated[row][col] = letters_arr[index]
+                    }
+                    else
+                    {
+                        break
+                    }
+                    index++;
+                }
+            }
             
             fs.readFile('db/grid.txt', (err, data) => {
                 if(err) throw err;
@@ -60,7 +82,7 @@ app.get('/get-letters', (req, res) => {
                     grid[i] = rows[i].split('')
                 }
                 const obj =  {
-                    array: letters_arr,
+                    array: letters_arr_formated,
                     grid: grid
                 }
                 const json_obj = JSON.stringify(obj)
