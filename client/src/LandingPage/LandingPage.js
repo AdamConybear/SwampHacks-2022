@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { v4 as uuidV4 } from "uuid"; // save reference to "v4" function from uuid library, but rename function to "uuidV4"
-// import Grid from '@mui/material/Grid';
+import axios from "axios";
 import Header from "./Header";
 import { Droppable, Draggable, DragDropContext } from "react-beautiful-dnd";
 import "./main.css";
@@ -10,15 +9,10 @@ const [r, c] = [8, 8];
 let tempGrid = Array(r)
 	.fill()
 	.map(() => Array(c).fill("#"));
-tempGrid[4][4] = "A";
 
-var tempLetters = [
-	["A", "D", "A", "M", "C", "O"],
-	["N", "Y", "B", "E", "#", "R"],
-	["Y", "O", "T", "T", "#", "#"],
-];
+let tempLetters = Array(13).fill("#");
+const now = new Date();
 
-// let lettersCount = 0;
 
 function getWindowDimensions() {
 	const { innerWidth: width, innerHeight: height } = window;
@@ -52,46 +46,91 @@ const parseLetterArray = (arr) => {
 		}
 		res[r] = row;
 		r++;
-	}
+    }
+    return res;
 };
 
 const LandingPage = () => {
-	const [letters, setLetters] = useState(tempLetters);
-	// const [lettersTest, setLettersTest] = useState(["A", "D", "A", "M", "C", "O", "N", "Y", "B", "E", "A", "R"]);
-	const [letterMap, setLetterMap] = useState({});
-	const [gridState, setGridState] = useState([]);
-	// const [userGrid, setUserGrid] = useState(
-	// 	Array(r)
-	// 		.fill()
-	// 		.map(() => Array(c).fill("#"))
-	// );
-	const [userGrid, setUserGrid] = useState(tempGrid);
+	const [letters, setLetters] = useState(parseLetterArray(tempLetters));
+    // const [gridState, setGridState] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [userGrid, setUserGrid] = useState(tempGrid);
+    const [correctSubmission, setCorrectSubmission] = useState(false);
+    const [score, setScore] = useState(0);
+    const [badAttempt,setBadAttempt] = useState(false);
+	
+    useEffect(()=>{
+        const state = JSON.parse(window.localStorage.getItem("state"));
+        console.log(state);
+        console.log(state.date);
+        
+        // const now = new Date();
+        const cur_date_formatted = now.getUTCDate()+"-"+now.getUTCMonth()+"-"+now.getUTCFullYear();
+        console.log(cur_date_formatted);
 
-	// retrieve letters and grid from local storage (if there)
-	// useEffect(() => {
-	// 	//if letters are there, grid will also be there
-	// 	const storedLetters = window.localStorage.getItem("letters");
+        if(!state || state.date !== cur_date_formatted){
+            //api call
+            console.log("getting state from api");
+            getGameData();
 
-	// 	if (!storedLetters) {
-	// 		//api call to get letters/grid for the day
-	//remove
-	// 		//update local storage once call is complete
-	// 	} else {
-	// 		//get from local storage
-	// 		window.localStorage.setItem("letters", letters);
-	// 		window.localStorage.setItem("userGrid", userGrid);
-	// 	}
-	// }, [letters]);
+        }else{
+            console.log("retrieved from local state");
+            //get from local storage
+            const {letters, userGrid, correctSubmission} = state;
 
-	//update userGrid as they move stuff
-	// useEffect(() => {
-	// 	console.log(userGrid);
-	// 	let temp = userGrid;
-	// 	temp[4][4] = "A";
-	// 	setUserGrid(temp);
-	// 	console.log(userGrid);
-	// 	// setUserGrid(JSON.parse(window.localStorage.getItem("userGrid")));
-	// }, []);
+            setLetters(letters);
+            setUserGrid(userGrid);
+            setCorrectSubmission(correctSubmission);
+        }
+
+
+    },[]);
+    
+    
+    const getGameData = async () =>{
+        setIsLoading(true);
+        try{
+            let address;
+
+            if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+                // dev code
+                address = "http://localhost:12345";
+            } else {
+                // production code
+                // address = process.env.BASE_URL || "https://lit-anchorage-94851.herokuapp.com";
+            }
+
+            const result = await axios.get(address + '/get-letters')
+            .then((res) => {
+                // console.log(res.data);
+                setLetters(parseLetterArray(res.data.array));
+                // setGridState(res.data.grid);
+                setIsLoading(false);
+
+                const cur_date_formatted = now.getUTCDate()+"-"+now.getUTCMonth()+"-"+now.getUTCFullYear();
+                const state = {
+                    date: cur_date_formatted,
+                    letters: parseLetterArray(res.data.array),
+                    userGrid: userGrid,
+                    correctSubmission: false
+                }
+                window.localStorage.setItem("state", JSON.stringify(state));
+                
+
+                })
+                .catch((error) => {
+                if (error.response) {
+                    console.log(error.response.data);
+                    console.log(error.response.status);
+                    console.log(error.response.headers);
+                }
+                });;
+        }catch(error){
+            console.log(error);
+        }
+    } 
+	
+
 
 	const getTileStyle = (isDraggingOver) => ({
 		background: isDraggingOver ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.5)",
@@ -105,20 +144,13 @@ const LandingPage = () => {
 	const reorderLetters = (letterArray, startIndexes, endIndexes) => {
 		//remember to set letter arr..maybe useeffect does this
 		const result = Array.from(letterArray);
-		//get indexes
-		const [startRow, startCol] = startIndexes.split("-");
-		const [endRow, endCol] = endIndexes.split("-");
-
-		if (startRow == endRow) {
-			const [removedLetter] = result[startRow].splice(startCol, 1);
-			const temp = result[endRow][endCol];
-			result[endRow].splice(endCol, 0, removedLetter);
-			result[startRow][startCol] = temp;
-		} else {
-			const letter = result[startRow][startCol];
-			result[startRow][startCol] = result[endRow][endCol];
-			result[endRow][endCol] = letter;
-		}
+		//get indexes        
+        const [sourceRow, sourceCol] = startIndexes.split("-");
+        const [destRow, destCol] = endIndexes.split("-");
+        //get letter and replace with #
+        const letter = result[sourceRow][sourceCol];
+        result[sourceRow][sourceCol] = result[destRow][destCol];
+        result[destRow][destCol] = letter;
 		// const [removedLetter] = result[startRow].splice(startCol, 1);
 
 		return result;
@@ -166,14 +198,12 @@ const LandingPage = () => {
 
 			//remove from grid
 			const [sourceRow, sourceCol] = droppableSource.droppableId.split("");
-
+            const [destRow, destCol] = droppableDestination.droppableId.split("-");
 			//get letter and replace with #
 			const letter = sourceClone[sourceRow][sourceCol];
-			sourceClone[sourceRow][sourceCol] = "#";
-
+			sourceClone[sourceRow][sourceCol] = destClone[destRow][destCol];
+            destClone[destRow][destCol] = letter;
 			//place letter in letter array
-			const [destRow, destCol] = droppableDestination.droppableId.split("-");
-			destClone[destRow][destCol] = letter;
 
 			result["grid"] = sourceClone;
 			result["letters"] = destClone;
@@ -192,17 +222,14 @@ const LandingPage = () => {
 	const onDragEnd = (result) => {
 		const { destination, source, draggableId } = result;
 		console.log("drag ended");
-		// console.log(source);
-		// console.log(destination);
-
-		const sourceLen = source.droppableId.length;
-		const destLen = destination.droppableId.length;
 
 		//dropped outside container
 		if (!destination) {
 			console.log("outside of dropzone");
 			return;
-		}
+        }
+        const sourceLen = source.droppableId.length;
+		const destLen = destination.droppableId.length;
 
 		//dropped within a container
 		if (sourceLen === 3 && destLen === 3) {
@@ -210,26 +237,91 @@ const LandingPage = () => {
 			//reorder in letters
 
 			const data = reorderLetters(letters, source.droppableId, destination.droppableId);
-			setLetters(data);
+            setLetters(data);
+            updateLocalStorageLetters(data);
 		} else if (sourceLen === 2 && destLen === 2) {
 			console.log("reorder in grid container");
 			//reorder in grid
 
 			const data = reorderGrid(userGrid, source.droppableId, destination.droppableId);
-			setUserGrid(data);
+            setUserGrid(data);
+            updateLocalStorageGrid(data);
 		} else {
 			console.log("Dropped in different container");
 			const result = move(getList(sourceLen), getList(destLen), source, destination);
 
 			//set state
 			setLetters(result["letters"]);
-			setUserGrid(result["grid"]);
+            setUserGrid(result["grid"]);
+            
+            updateLocalStorageLetters(result["letters"]);
+            updateLocalStorageGrid(result["grid"]);
 		}
-	};
+    };
 
-	// const Test = (i, len) => {
-	// 	console.log("i: " + i + " -- len:" + len);
-	// };
+    const updateLocalStorageLetters = (letters) => {
+        let state = JSON.parse(window.localStorage.getItem("state"));
+        state.letters = letters;
+        window.localStorage.setItem("state", JSON.stringify(state));
+    }
+    const updateLocalStorageGrid = (grid) => {
+        let state = JSON.parse(window.localStorage.getItem("state"));
+        state.userGrid = grid;
+        window.localStorage.setItem("state", JSON.stringify(state));
+    }
+    const updateLocalStorageSubmission = (success) => {
+        let state = JSON.parse(window.localStorage.getItem("state"));
+        state.correctSubmission = success;
+        window.localStorage.setItem("state", JSON.stringify(state));
+    }
+    
+
+    const handleSubmit = () => {
+        try{
+            let address;
+
+            if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+                // dev code
+                address = "http://localhost:12345";
+            } else {
+                // production code
+                // address = process.env.BASE_URL || "https://lit-anchorage-94851.herokuapp.com";
+            }
+
+            axios.post(address + '/check-grid',{
+                grid: userGrid
+            })
+            .then((res) => {
+                console.log(res.data);
+                setCorrectSubmission(res.data.board_is_valid);
+                setScore(10*res.data.score);
+                if(res.data.board_is_valid){
+                    setCorrectSubmission(res.data.board_is_valid);
+                }else{
+                    setBadAttempt(true);
+
+                    setTimeout(()=>{
+                        setBadAttempt(false);
+                    },2000)
+                }
+
+
+                updateLocalStorageSubmission(res.data.board_is_valid);
+                
+              })
+              .catch((error) => {
+                if (error.response) {
+                  console.log(error.response.data);
+                  console.log(error.response.status);
+                  console.log(error.response.headers);
+                }
+              });;
+
+        }catch(error){
+            console.log(error);
+        }
+
+    }
 
 	return (
 		<div className="app-container">
@@ -244,7 +336,7 @@ const LandingPage = () => {
 										<Droppable
 											key={`${i}${j}`}
 											droppableId={`${i}${j}`}
-											isDropDisabled={letter !== "#" ? true : false}
+											isDropDisabled={letter !== "#" || correctSubmission ? true : false}
 										>
 											{(provided, snapshot) => (
 												<div
@@ -261,7 +353,8 @@ const LandingPage = () => {
 														>
 															{(provided, snapshot) => (
 																<div
-																	className="letter-grid disable-select"
+                                                                    className="letter-grid disable-select"
+                                                                    id={correctSubmission ? "turn-green": badAttempt ? "flash-red" : null}
 																	ref={provided.innerRef}
 																	{...provided.draggableProps}
 																	{...provided.dragHandleProps}
@@ -291,7 +384,7 @@ const LandingPage = () => {
 										<Droppable
 											key={`${i}-${j}`}
 											droppableId={`${i}-${j}`}
-											// isDropDisabled={letter !== "#" ? true : false}
+											isDropDisabled={correctSubmission ? true : false}
 										>
 											{(provided, snapshot) => (
 												<div
@@ -330,7 +423,7 @@ const LandingPage = () => {
 				</div>
 			</DragDropContext>
 
-			<div className="submit">Submit</div>
+			<div className="submit" onClick={handleSubmit}>Submit</div>
 		</div>
 	);
 };
