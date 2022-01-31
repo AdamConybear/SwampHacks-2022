@@ -8,10 +8,10 @@ function App()
       <Routes>
         <Route
         exact
-        path="/LandingPage"
+        path="/"
         element={<LandingPage />}
         />
-        <Route path="*" element={<Navigate to="/LandingPage"/>} />
+        <Route path="*" element={<Navigate to="/"/>} />
       </Routes>
     </Router>
   );

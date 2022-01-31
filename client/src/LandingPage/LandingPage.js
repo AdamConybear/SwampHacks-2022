@@ -11,8 +11,6 @@ let tempGrid = Array(r)
 	.map(() => Array(c).fill("#"));
 
 let tempLetters = Array(13).fill("#");
-const now = new Date();
-
 
 function getWindowDimensions() {
 	const { innerWidth: width, innerHeight: height } = window;
@@ -53,7 +51,7 @@ const parseLetterArray = (arr) => {
 const LandingPage = () => {
 	const [letters, setLetters] = useState(parseLetterArray(tempLetters));
     // const [gridState, setGridState] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    // const [isLoading, setIsLoading] = useState(false);
     const [userGrid, setUserGrid] = useState(tempGrid);
     const [correctSubmission, setCorrectSubmission] = useState(false);
     const [score, setScore] = useState(0);
@@ -61,20 +59,20 @@ const LandingPage = () => {
 	
     useEffect(()=>{
         const state = JSON.parse(window.localStorage.getItem("state"));
-        console.log(state);
-        console.log(state.date);
+        // console.log(state);
+        // console.log(state.date);
         
-        // const now = new Date();
+        const now = new Date();
         const cur_date_formatted = now.getUTCDate()+"-"+now.getUTCMonth()+"-"+now.getUTCFullYear();
-        console.log(cur_date_formatted);
+        // console.log(cur_date_formatted);
 
         if(!state || state.date !== cur_date_formatted){
             //api call
-            console.log("getting state from api");
+            // console.log("getting state from api");
             getGameData();
 
         }else{
-            console.log("retrieved from local state");
+            // console.log("retrieved from local state");
             //get from local storage
             const {letters, userGrid, correctSubmission} = state;
 
@@ -88,16 +86,16 @@ const LandingPage = () => {
     
     
     const getGameData = async () =>{
-        setIsLoading(true);
+        // setIsLoading(true);
         try{
             let address;
 
             if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
                 // dev code
-                address = "http://localhost:12345";
+                address = "http://localhost:5000";
             } else {
                 // production code
-                // address = process.env.BASE_URL || "https://lit-anchorage-94851.herokuapp.com";
+                address = process.env.BASE_URL || "https://adamconybear.github.io";
             }
 
             const result = await axios.get(address + '/get-letters')
@@ -105,8 +103,8 @@ const LandingPage = () => {
                 // console.log(res.data);
                 setLetters(parseLetterArray(res.data.array));
                 // setGridState(res.data.grid);
-                setIsLoading(false);
-
+                // setIsLoading(false);
+				const now = new Date();
                 const cur_date_formatted = now.getUTCDate()+"-"+now.getUTCMonth()+"-"+now.getUTCFullYear();
                 const state = {
                     date: cur_date_formatted,
@@ -220,12 +218,12 @@ const LandingPage = () => {
 	};
 
 	const onDragEnd = (result) => {
-		const { destination, source, draggableId } = result;
-		console.log("drag ended");
+		const { destination, source } = result;
+		// console.log("drag ended");
 
 		//dropped outside container
 		if (!destination) {
-			console.log("outside of dropzone");
+			// console.log("outside of dropzone");
 			return;
         }
         const sourceLen = source.droppableId.length;
@@ -233,21 +231,21 @@ const LandingPage = () => {
 
 		//dropped within a container
 		if (sourceLen === 3 && destLen === 3) {
-			console.log("reorder in letters container");
+			// console.log("reorder in letters container");
 			//reorder in letters
 
 			const data = reorderLetters(letters, source.droppableId, destination.droppableId);
             setLetters(data);
             updateLocalStorageLetters(data);
 		} else if (sourceLen === 2 && destLen === 2) {
-			console.log("reorder in grid container");
+			// console.log("reorder in grid container");
 			//reorder in grid
 
 			const data = reorderGrid(userGrid, source.droppableId, destination.droppableId);
             setUserGrid(data);
             updateLocalStorageGrid(data);
 		} else {
-			console.log("Dropped in different container");
+			// console.log("Dropped in different container");
 			const result = move(getList(sourceLen), getList(destLen), source, destination);
 
 			//set state
@@ -282,7 +280,7 @@ const LandingPage = () => {
 
             if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
                 // dev code
-                address = "http://localhost:12345";
+                address = "http://localhost:5000";
             } else {
                 // production code
                 // address = process.env.BASE_URL || "https://lit-anchorage-94851.herokuapp.com";
@@ -292,7 +290,7 @@ const LandingPage = () => {
                 grid: userGrid
             })
             .then((res) => {
-                console.log(res.data);
+                // console.log(res.data);
                 setCorrectSubmission(res.data.board_is_valid);
                 setScore(10*res.data.score);
                 if(res.data.board_is_valid){

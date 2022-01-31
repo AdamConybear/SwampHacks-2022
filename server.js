@@ -9,11 +9,21 @@ const bodyParser = require("body-parser");
 const fs = require("fs");
 const now = new Date();
 
-const port = 12345; // port defaulted to when none is provided by the environment
+// const port = 12345; // port defaulted to when none is provided by the environment
+const port = process.env.PORT || 5000;
 
-app.use(express.static("./client/build"));
+// app.use(express.static("./client/build"));
 app.use(bodyParser.json());
 app.use(cors());
+
+if (process.env.NODE_ENV === "production") {
+	// Serve any static files
+	app.use(express.static(path.join(__dirname, "./client/build")));
+	// app.use(express.static('client/build'));
+	app.get("/*", function (req, res) {
+		res.sendFile(path.resolve(__dirname, "client", "build", "index.html"));
+	});
+}
 
 // The root endpoint is the entry point to react game frontend
 // app.get('/*', (req, res) => {
@@ -176,18 +186,9 @@ app.post("/check-grid", (req, res) => {
 	}
 });
 
-// // This is called anytime somebody connects to our server.
-// io.on('connection', socket => {
-//     // Below are listeners that will be triggered by different user events.
-//     socket.on('join-room', (room_id, user_id) => {
-//         console.log("room joined")
-//         socket.join(room_id) // tells socket to join a room with current user and provided room_id
-//         io.emit('user-connected', user_id) // sends a message to everyone in this room with user_id of new user
-//     })
-// })
 
 function start_server() {
-	server.listen(process.env.PORT || port, () => console.log(`Server listening at http://localhost:${port}`));
+	server.listen(port, () => console.log(`Server now running on port ${port}!`));
 }
 
 start_server();
