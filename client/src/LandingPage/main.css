@@ -242,6 +242,7 @@
     -moz-transition: background 0.3s linear;
     position: absolute;
     bottom:0;
+    font-size: 18px;
 
 }
 .submit:hover{

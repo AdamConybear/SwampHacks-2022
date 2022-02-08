@@ -8,15 +8,19 @@ const Header = () => {
 
 	return (
 		<div className="header-container">
-			<div className="header-title">WORD WIND</div>
+			<div className="header-title">JUMBLD</div>
 			<div className="header-right-web">
-                <GameRules trigger={<div className="clickable">How to play</div>}/>
+				<GameRules trigger={<div className="clickable">How to play</div>} />
 				{/* <div className="clickable">Stats</div> */}
 			</div>
 			<div className="header-right-mobile">
-                <GameRules trigger={<div className="clickable">
-					<BsQuestionCircle size={25} />
-				</div>}/>
+				<GameRules
+					trigger={
+						<div className="clickable">
+							<BsQuestionCircle size={25} />
+						</div>
+					}
+				/>
 				{/* <div className="clickable">
 					<IoStatsChartSharp size={25} />
 				</div> */}
